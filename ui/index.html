@@ -1330,7 +1330,7 @@
 
         // Create WebSocket connection
         const clientId = 'monitor_' + Date.now();
-        const wsUrl = `ws://${window.location.host}/ws/${clientId}`;
+        const wsUrl = `wss://${window.location.host}/ws/${clientId}`;
         callMonitorWs = new WebSocket(wsUrl);
 
         callMonitorWs.onopen = () => {
@@ -1723,7 +1723,7 @@
       try {
         // Create WebSocket connection for modal
         const clientId = 'modal_' + Date.now();
-        const wsUrl = `ws://${window.location.host}/ws/${clientId}`;
+        const wsUrl = `wss://${window.location.host}/ws/${clientId}`;
         console.log('Creating WebSocket connection to:', wsUrl);
         
         modalCallWs = new WebSocket(wsUrl);
@@ -2245,7 +2245,7 @@
         tb.innerHTML = '';
         if (!res.length) {
           tb.innerHTML = '<tr><td colspan="4">No uploaded lists yet.</td></tr>';
-          renderUploadedRows({ list: null, rows: [] });
+          renderUploadedRows({ list: null, rowss: [] });
           return;
         }
         res.forEach(list => {
