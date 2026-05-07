@@ -1,0 +1,36 @@
+# Odia Voice Agent — Python dependencies
+# Generated for Python 3.13
+
+# Web framework
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+
+# Environment & config
+python-dotenv==1.0.1
+
+# Data processing
+pandas==2.2.3
+openpyxl    # .xlsx support
+xlrd
+
+# Database (async MySQL)
+aiomysql==0.2.0
+cryptography==43.0.1  # required for MySQL auth (caching_sha2_password)
+
+# Authentication & JWT
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+python-multipart==0.0.6  # for form data in login
+
+# LiveKit
+livekit
+livekit-agents
+livekit-plugins-openai
+livekit-plugins-sarvam
+livekit-plugins-silero
+
+# HTTP client (agent → backend call-log)
+aiohttp
+
+# Pydantic (bundled with FastAPI, pinned for safety)
+pydantic

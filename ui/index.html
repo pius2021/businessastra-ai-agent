@@ -1,0 +1,2703 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Odia AI Agent — Dashboard</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <style>
+    /* Dark theme CSS variables */
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0
+    }
+
+    :root {
+      --bg: #0d0d0d;
+      --card: rgba(22, 22, 22, 0.7);
+      --border: #252525;
+      --accent: #00ff88;
+      --accent-hover: #00cc6a;
+      --accent2: #00ccff;
+      --danger: #ff4d4d;
+      --warn: #ffaa00;
+      --muted: #5a5a5a;
+      --text: #e0e0e0;
+      --text2: #aaa;
+      --mono: 'Courier New', monospace;
+      --sans: 'Inter', 'Segoe UI', system-ui, sans-serif;
+      --r: 12px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      min-height: 100vh;
+      line-height: 1.5;
+      font-size: 14px;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle at 50% 50%, rgba(0, 255, 136, 0.05), transparent 60%), radial-gradient(circle at 80% 20%, rgba(0, 204, 255, 0.05), transparent 50%);
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    header {
+      background: rgba(13, 13, 13, 0.8);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 2rem;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    h1.logo {
+      font-size: 1.5rem;
+      font-weight: 700;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    nav {
+      display: flex;
+      gap: 0.5rem;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+
+    nav::-webkit-scrollbar {
+      height: 4px;
+    }
+
+    nav::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 4px;
+    }
+
+    .tab-btn {
+      background: transparent;
+      color: var(--text2);
+      border: 1px solid transparent;
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      white-space: nowrap;
+      font-weight: 500;
+    }
+
+    .tab-btn:hover {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .tab-btn.active {
+      background: rgba(0, 255, 136, 0.1);
+      color: var(--accent);
+      border-color: rgba(0, 255, 136, 0.2);
+      box-shadow: 0 0 15px rgba(0, 255, 136, 0.1);
+    }
+
+    main {
+      padding: 2rem;
+      flex: 1;
+      max-width: 1400px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .panel {
+      display: none;
+      animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .panel.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Cards & Layout */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .card:hover {
+      border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .kpi {
+      text-align: center;
+      padding: 2rem 1rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .kpi::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      opacity: 0.5;
+    }
+
+    .kpi h3 {
+      color: var(--text2);
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 0.5rem;
+    }
+
+    .kpi .val {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: var(--text);
+      text-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+    }
+
+    /* Typography */
+    h2 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    h3 {
+      font-size: 1.1rem;
+      margin-bottom: 1rem;
+      color: #eee;
+    }
+
+    /* Forms & Inputs */
+    .form-group {
+      margin-bottom: 1.2rem;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 0.4rem;
+      color: var(--text2);
+      font-size: 0.9rem;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      font-family: var(--sans);
+      font-size: 0.95rem;
+      transition: all 0.2s ease;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(0, 255, 136, 0.1);
+      background: rgba(0, 0, 0, 0.6);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
+
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+    }
+
+    .checkbox-group input {
+      width: auto;
+      accent-color: var(--accent);
+      transform: scale(1.2);
+    }
+
+    /* Buttons */
+    .btn {
+      background: var(--border);
+      color: var(--text);
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.95rem;
+    }
+
+    .btn:hover {
+      background: var(--muted);
+      transform: translateY(-1px);
+    }
+
+    .btn:active {
+      transform: translateY(1px);
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #000;
+      box-shadow: 0 4px 15px rgba(0, 255, 136, 0.3);
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-hover);
+      box-shadow: 0 6px 20px rgba(0, 255, 136, 0.4);
+    }
+
+    .btn-danger {
+      background: rgba(255, 77, 77, 0.1);
+      color: var(--danger);
+      border: 1px solid rgba(255, 77, 77, 0.3);
+    }
+
+    .btn-danger:hover {
+      background: var(--danger);
+      color: #fff;
+      box-shadow: 0 4px 15px rgba(255, 77, 77, 0.3);
+    }
+
+    .btn-small {
+      padding: 0.4rem 0.8rem;
+      font-size: 0.85rem;
+    }
+
+    /* Tables */
+    .table-wrapper {
+      overflow-x: auto;
+      margin-top: 1rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+
+    th,
+    td {
+      padding: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      background: rgba(0, 0, 0, 0.3);
+      font-weight: 600;
+      color: var(--text2);
+      text-transform: uppercase;
+      font-size: 0.8rem;
+      letter-spacing: 0.5px;
+      position: sticky;
+      top: 0;
+      backdrop-filter: blur(5px);
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    /* Badges */
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.6rem;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .badge.active,
+    .badge.completed,
+    .badge.booked {
+      background: rgba(0, 255, 136, 0.1);
+      color: var(--accent);
+      border: 1px solid rgba(0, 255, 136, 0.2);
+    }
+
+    .badge.failed,
+    .badge.cancelled {
+      background: rgba(255, 77, 77, 0.1);
+      color: var(--danger);
+      border: 1px solid rgba(255, 77, 77, 0.2);
+    }
+
+    .badge.pending,
+    .badge.paused {
+      background: rgba(255, 170, 0, 0.1);
+      color: var(--warn);
+      border: 1px solid rgba(255, 170, 0, 0.2);
+    }
+
+    /* Utilities */
+    .hidden {
+      display: none !important;
+    }
+
+    .flex {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .flex-between {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .text-center {
+      text-align: center;
+    }
+
+    .mt-1 {
+      margin-top: 1rem;
+    }
+
+    .mt-2 {
+      margin-top: 2rem;
+    }
+
+    .mb-1 {
+      margin-bottom: 1rem;
+    }
+
+    .code-block {
+      font-family: var(--mono);
+      background: #000;
+      padding: 1rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      overflow-x: auto;
+      font-size: 0.9rem;
+      color: #a9dc76;
+    }
+
+    /* Toast */
+    #toast-container {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .toast {
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 1rem 1.5rem;
+      border-radius: 8px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(10px);
+      animation: slideIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      border-left: 4px solid var(--accent);
+    }
+
+    .toast.error {
+      border-left-color: var(--danger);
+    }
+
+    .toast.warn {
+      border-left-color: var(--warn);
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    @keyframes fadeOut {
+      to {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+    }
+
+    /* Logs Terminal */
+    #logs-container {
+      background: #0a0a0a;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      height: 500px;
+      overflow-y: auto;
+      font-family: var(--mono);
+      font-size: 0.85rem;
+    }
+
+    .log-line {
+      margin-bottom: 0.2rem;
+      display: flex;
+      gap: 0.5rem;
+      word-break: break-all;
+    }
+
+    .log-ts {
+      color: var(--muted);
+      min-width: 150px;
+    }
+
+    .log-level-info {
+      color: var(--accent2);
+    }
+
+    .log-level-warning {
+      color: var(--warn);
+    }
+
+    .log-level-error {
+      color: var(--danger);
+    }
+
+    .action-buttons {
+  display: flex;
+  gap: 5px;
+}
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <h1 class="logo">Odia AI Agent</h1>
+    <nav id="main-nav">
+      <button class="tab-btn active" onclick="switchTab('stats')">📊 Stats</button>
+      <button class="tab-btn" onclick="switchTab('users')">👥 Manage Users</button>
+      <button class="tab-btn" onclick="switchTab('call')">📞 Single Call</button>
+      <button class="tab-btn" onclick="switchTab('call-monitor')">🎧 Call Monitor</button>
+      <!-- <button class="tab-btn" onclick="switchTab('campaigns')">🚀 Campaigns</button> -->
+      <button class="tab-btn" onclick="switchTab('uploads')">Excel Lists</button>
+      <button class="tab-btn" onclick="switchTab('agents')">🤖 Agents</button>
+      <button class="tab-btn" onclick="switchTab('prompt')">✏️ Global Prompt</button>
+      <!-- <button class="tab-btn" onclick="switchTab('appointments')">📅 Appointments</button> -->
+      <button class="tab-btn" onclick="switchTab('logs-db')">📝 Call Logs</button>
+      <!-- <button class="tab-btn" onclick="switchTab('crm')">👥 CRM</button> -->
+      <button class="tab-btn" id="settings-tab" onclick="switchTab('settings')">⚙️ Settings</button>
+      <button class="tab-btn" id="logs-tab" onclick="switchTab('live-logs')">📋 Logs</button>
+    </nav>
+    <div style="display: flex; align-items: center; gap: 1rem;">
+      <div style="color: var(--text2); font-size: 0.9rem;">
+        <div id="user-display" style="text-align: right;">
+          <strong id="user-username">User</strong>
+          <br>
+         <small id="user-type" style="color: var(--accent);">(role)</small>
+        </div>
+      </div>
+      <button class="btn" onclick="handleLogout()" style="background: rgba(255, 77, 77, 0.1); color: var(--danger); border: 1px solid rgba(255, 77, 77, 0.3);">Logout</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- STATS -->
+    <div id="stats" class="panel active">
+      <div class="grid-4 mb-1">
+        <div class="card kpi">
+          <h3>Total Calls</h3>
+          <div class="val" id="kpi-total">0</div>
+        </div>
+        <div class="card kpi">
+          <h3>Completed Calls</h3>
+          <div class="val" style="color:var(--accent)" id="kpi-completed">0</div>
+        </div>
+        <div class="card kpi">
+          <h3>Not Interested</h3>
+          <div class="val" style="color:var(--danger)" id="kpi-rejected">0</div>
+        </div>
+        <div class="card kpi">
+          <h3>No Answered</h3>
+          <div class="val" id="kpi-no-answered">0</div>
+        </div>
+      </div>
+      <div class="grid-3 mb-1">
+        <div class="card">
+          <h2>Outcomes</h2>
+          <canvas id="chart-outcomes" height="200"></canvas>
+        </div>
+        <div class="card" style="grid-column: span 2;">
+          <h2>Call Volume (14 Days)</h2>
+          <canvas id="chart-timeline" height="200"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- USER LIST -->
+    <div id="users" class="panel">
+      <div class="card">
+        <div class="flex-between mb-1">
+          <h2>User List</h2>
+          <button class="btn btn-small" onclick="loadUsers()">↻ Refresh</button>
+        </div>
+        <div class="table-wrapper">
+          <table id="users-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Full Name</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- SINGLE CALL -->
+    <div id="call" class="panel">
+      <div class="card" style="max-width: 600px; margin: 0 auto;">
+        <h2>📞 Dispatch Single Call</h2>
+        <form id="call-form" onsubmit="event.preventDefault(); dispatchSingleCall();">
+          <div class="form-group">
+            <label>Phone Number (E.164)</label>
+            <input type="text" id="call-phone" placeholder="+1234567890" required>
+          </div>
+          <div class="form-group">
+            <label>Lead Name</label>
+            <input type="text" id="call-lead" placeholder="John Doe">
+          </div>
+          <div class="form-group">
+            <label>Customer Context</label>
+            <textarea id="call-context" placeholder="Additional customer details, history, or context for the AI..." style="min-height: 80px;"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Agent Profile</label>
+            <select id="call-profile"></select>
+          </div>
+          <div class="form-group">
+            <label class="checkbox-group">
+              <input type="checkbox" id="call-use-custom"
+                onchange="$('custom-prompt-group').classList.toggle('hidden', !this.checked)">
+              Use Custom Prompt Override
+            </label>
+          </div>
+          <div class="form-group hidden" id="custom-prompt-group">
+            <textarea id="call-prompt" placeholder="Override system prompt for this call..."></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center;">Dial Now
+            📞</button>
+        </form>
+        <div id="call-result" class="mt-1 text-center" style="color: var(--accent2);"></div>
+      </div>
+    </div>
+
+    <!-- CALL MONITOR -->
+    <div id="call-monitor" class="panel">
+      <div class="grid-2">
+        <div class="card">
+          <h2>🎧 Call Monitor</h2>
+          <div class="form-group">
+            <label>Room Name / Call ID</label>
+            <input type="text" id="monitor-room-name" placeholder="call-1234567890-1234">
+          </div>
+          <div class="flex">
+            <button class="btn btn-primary" onclick="startMonitoring()">Start Monitoring</button>
+            <button class="btn btn-danger" onclick="endCall()">End Call</button>
+            <button class="btn" onclick="stopMonitoring()">Stop</button>
+          </div>
+          <div id="monitor-status" class="mt-1" style="color: var(--text2);"></div>
+        </div>
+        
+        <div class="card">
+          <h3>Call Status</h3>
+          <div id="call-status-info">
+            <div class="flex">
+              <span style="color: var(--text2);">Status:</span>
+              <span id="call-status">Not Connected</span>
+            </div>
+            <div class="flex mt-1">
+              <span style="color: var(--text2);">Participants:</span>
+              <span id="call-participants">0</span>
+            </div>
+            <div class="flex mt-1">
+              <span style="color: var(--text2);">Duration:</span>
+              <span id="call-duration">0:00</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Live Conversation</h3>
+        <div id="conversation-container" style="height: 400px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; padding: 1rem; background: rgba(0,0,0,0.3);">
+          <div id="conversation-log" style="font-family: var(--mono); font-size: 0.9rem;">
+            <div style="color: var(--text2); text-align: center; padding: 2rem;">
+              Waiting for call data...
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CAMPAIGNS -->
+    <div id="campaigns" class="panel">
+      <div class="flex-between mb-1">
+        <h2>🚀 Campaigns</h2>
+        <button class="btn btn-primary" onclick="$('camp-modal').classList.remove('hidden')">+ New Campaign</button>
+      </div>
+      <div class="card table-wrapper">
+        <table id="camp-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Schedule</th>
+              <th>Status</th>
+              <th>Progress</th>
+              <th>Created</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <!-- Campaign Modal -->
+      <div id="camp-modal" class="hidden"
+        style="position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:1000; display:flex; align-items:center; justify-content:center; padding:1rem;">
+        <div class="card" style="width: 100%; max-width: 600px; max-height: 90vh; overflow-y: auto;">
+          <h2>Create Campaign</h2>
+          <form onsubmit="event.preventDefault(); createCampaign();">
+            <div class="form-group">
+              <label>Campaign Name</label>
+              <input type="text" id="camp-name" required>
+            </div>
+            <div class="grid-2">
+              <div class="form-group">
+                <label>Schedule Type</label>
+                <select id="camp-type">
+                  <option value="once">Run Once Now</option>
+                  <option value="daily">Daily</option>
+                  <option value="weekdays">Weekdays</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Time (HH:MM)</label>
+                <input type="time" id="camp-time" value="09:00">
+              </div>
+            </div>
+            <div class="grid-2">
+              <div class="form-group">
+                <label>Agent Profile</label>
+                <select id="camp-profile"></select>
+              </div>
+              <div class="form-group">
+                <label>Delay between calls (sec)</label>
+                <input type="number" id="camp-delay" value="3" min="1">
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Upload Contacts CSV (Headers: phone, lead_name, customer_context)</label>
+              <input type="file" id="camp-csv" accept=".csv" required>
+            </div>
+            <div class="flex" style="justify-content: flex-end; margin-top: 1.5rem;">
+              <button type="button" class="btn" onclick="$('camp-modal').classList.add('hidden')">Cancel</button>
+              <button type="submit" class="btn btn-primary">Create Campaign</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- EXCEL LISTS -->
+    <div id="uploads" class="panel">
+      <div class="grid-2">
+        <div class="card">
+          <h2>Upload Excel List</h2>
+          <form id="upload-form" onsubmit="event.preventDefault(); uploadExcelList();">
+            <div class="form-group">
+              <label>List Name</label>
+              <input type="text" id="upload-name" placeholder="Loan follow-up customers">
+            </div>
+            <div class="form-group">
+              <label>Excel or CSV File</label>
+              <input type="file" id="upload-file" accept=".xlsx,.xls,.csv" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Upload List</button>
+          </form>
+          <p id="upload-status" class="mt-1" style="color: var(--text2);"></p>
+        </div>
+
+        <div class="card">
+          <div class="flex-between mb-1">
+            <h2>Saved Lists</h2>
+            <button class="btn btn-small" onclick="loadUploadedLists()">Refresh</button>
+          </div>
+          <div class="table-wrapper">
+            <table id="upload-lists-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Rows</th>
+                  <th>Created</th>
+                  <th>Open</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="flex-between mb-1">
+          <h2 id="upload-current-title">Uploaded Rows</h2>
+          <div class="flex">
+            <select id="upload-profile" style="min-width: 220px;"></select>
+            <button class="btn btn-small" onclick="loadUploadedRows()">Refresh Rows</button>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Phone Column</label>
+            <select id="upload-phone-column"></select>
+          </div>
+          <div class="form-group">
+            <label>Lead Name Column</label>
+            <select id="upload-name-column"></select>
+          </div>
+        </div>
+        <button class="btn btn-small" onclick="saveUploadedMapping()">Save Column Mapping</button>
+        <div class="table-wrapper">
+          <table id="upload-rows-table">
+            <thead></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- AGENTS -->
+    <div id="agents" class="panel">
+      <div class="grid-2">
+        <div class="card">
+          <h2>🤖 Create/Edit Agent Profile</h2>
+          <form onsubmit="event.preventDefault(); saveAgentProfile();">
+            <input type="hidden" id="agent-id">
+            <div class="form-group">
+              <label>Profile Name</label>
+              <input type="text" id="agent-name" required>
+            </div>
+            <div class="grid-2">
+              <div class="form-group">
+                <label>Voice Model</label>
+                <select id="agent-voice-model" onchange="updateVoiceOptions();" required>
+                  <option value="bulbul:v3">Bulbul v3 (Premium - 37 voices)</option>
+                  <option value="bulbul:v2">Bulbul v2 (Standard - 7 voices)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Voice</label>
+                <select id="agent-voice" required>
+                  <option value="shubh">Loading voices...</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Target Language (BCP-47 format)</label>
+              <select id="agent-language-code" required>
+                <option value="od-IN">Odia (India)</option>
+                <option value="en-IN">English (India)</option>
+                <option value="hi-IN">Hindi (India)</option>
+                <option value="bn-IN">Bengali (India)</option>
+                <option value="ta-IN">Tamil (India)</option>
+                <option value="te-IN">Telugu (India)</option>
+                <option value="kn-IN">Kannada (India)</option>
+                <option value="ml-IN">Malayalam (India)</option>
+                <option value="mr-IN">Marathi (India)</option>
+                <option value="gu-IN">Gujarati (India)</option>
+                <option value="pa-IN">Punjabi (India)</option>
+              </select>
+            </div>
+            <div class="grid-2">
+              <div class="form-group">
+                <label>LLM Model</label>
+                <select id="agent-model">
+                  <option value="sarvam-30b">sarvam-30b</option>
+                  <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>System Prompt Override (Leave empty to use Global Prompt)</label>
+              <textarea id="agent-prompt"></textarea>
+            </div>
+            <div class="form-group">
+              <label class="checkbox-group">
+                <input type="checkbox" id="agent-default"> Set as Default Profile
+              </label>
+            </div>
+            <div class="flex">
+              <button type="submit" class="btn btn-primary">Save Profile</button>
+              <button type="button" class="btn" onclick="resetAgentForm()">Clear</button>
+            </div>
+          </form>
+        </div>
+        <div class="card">
+          <h2>Saved Profiles</h2>
+          <div class="table-wrapper">
+            <table id="agent-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Voice Model</th>
+                  <th>Voice</th>
+                  <th>Language</th>
+                  <th>LLM</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROMPT -->
+    <div id="prompt" class="panel">
+      <div class="card">
+        <h2>✏️ Global System Prompt</h2>
+        <p class="mb-1" style="color:var(--text2)">This is the default prompt used if an Agent Profile does not specify
+          one. You can use placeholders like <code>{lead_name}</code>, <code>{customer_context}</code>.</p>
+        <form onsubmit="event.preventDefault(); savePrompt();">
+          <textarea id="global-prompt"
+            style="min-height: 400px; font-family: var(--mono); font-size: 0.9rem; line-height: 1.6;"></textarea>
+          <div class="flex mt-1">
+            <button type="submit" class="btn btn-primary">Save Global Prompt</button>
+            <button type="button" class="btn btn-danger" onclick="resetPrompt()">Reset to Default</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- APPOINTMENTS -->
+    <div id="appointments" class="panel">
+      <div class="card">
+        <div class="flex-between mb-1">
+          <h2>📅 Appointments</h2>
+          <input type="date" id="appt-date" onchange="loadAppointments()">
+        </div>
+        <div class="table-wrapper">
+          <table id="appt-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Name</th>
+                <th>Phone</th>
+                <th>Service</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- CALL LOGS -->
+    <div id="logs-db" class="panel">
+      <div class="card">
+        <div class="flex-between mb-1">
+          <h2>📝 Call Logs</h2>
+          <button class="btn btn-small" onclick="loadCalls(1)">↻ Refresh</button>
+        </div>
+        <div class="table-wrapper">
+          <table id="calls-table">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Phone</th>
+                <th>Lead</th>
+                <th>Outcome</th>
+                <th>Dur (s)</th>
+                <th>Notes</th>
+                <th>Log</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+      
+      <!-- Call Log Modal -->
+      <div id="call-log-modal" class="hidden" style="position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:1000; display:flex; align-items:center; justify-content:center; padding:1rem;">
+        <div class="card" style="width: 100%; max-width: 600px; max-height: 90vh; display:flex; flex-direction:column;">
+          <div class="flex-between mb-1">
+            <h2>📜 Conversation History</h2>
+            <button class="btn btn-small" onclick="$('call-log-modal').classList.add('hidden')">✕ Close</button>
+          </div>
+          <div id="call-log-content" style="flex:1; overflow-y:auto; border:1px solid var(--border); border-radius:8px; padding:1rem; background:rgba(0,0,0,0.3); font-family:var(--mono); font-size:0.9rem;">
+            Loading...
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CRM -->
+    <div id="crm" class="panel">
+      <div class="card">
+        <h2>👥 CRM Contacts</h2>
+        <div class="table-wrapper">
+          <table id="crm-table">
+            <thead>
+              <tr>
+                <th>Phone</th>
+                <th>Lead Name</th>
+                <th>Total Calls</th>
+                <th>Booked</th>
+                <th>Last Outcome</th>
+                <th>Last Call</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div id="settings" class="panel">
+      <div class="grid-2">
+        <div class="card">
+          <h2>LiveKit Setup</h2>
+          <form
+            onsubmit="event.preventDefault(); saveSettingsGroup('livekit', ['LIVEKIT_URL', 'LIVEKIT_API_KEY', 'LIVEKIT_API_SECRET']);">
+            <div class="form-group"><label>URL</label><input type="text" id="LIVEKIT_URL"></div>
+            <div class="form-group"><label>API Key</label><input type="password" id="LIVEKIT_API_KEY"></div>
+            <div class="form-group"><label>API Secret</label><input type="password" id="LIVEKIT_API_SECRET"></div>
+            <button type="submit" class="btn btn-primary">Save LiveKit Config</button>
+          </form>
+        </div>
+
+        <div class="card">
+          <h2>AI Provider Setup</h2>
+          <form
+            onsubmit="event.preventDefault(); saveSettingsGroup('ai', ['SARVAM_API_KEY', 'GROQ_API_KEY', 'LLM_PROVIDER', 'CUSTOM_LLM_BASE_URL', 'CUSTOM_LLM_API_KEY', 'CUSTOM_LLM_MODEL', 'GROQ_MODEL', 'SARVAM_LLM_MODEL']);">
+            <div class="form-group"><label>Sarvam API Key</label><input type="password" id="SARVAM_API_KEY"></div>
+            <div class="form-group"><label>Sarvam Model</label><input type="text" id="SARVAM_LLM_MODEL" placeholder="sarvam-30b"></div>
+            <div class="form-group"><label>Groq API Key</label><input type="password" id="GROQ_API_KEY"></div>
+            <div class="form-group"><label>Groq Model</label><input type="text" id="GROQ_MODEL" placeholder="llama-3.3-70b-versatile"></div>
+            <div class="form-group"><label>Primary Provider</label>
+              <select id="LLM_PROVIDER" onchange="document.getElementById('custom-llm-settings').classList.toggle('hidden', this.value !== 'custom')">
+                <option value="groq">Groq</option>
+                <option value="sarvam">Sarvam</option>
+                <option value="custom">Custom (e.g., OpenAI compatible)</option>
+              </select>
+            </div>
+            <div id="custom-llm-settings" class="hidden">
+              <div class="form-group"><label>Custom Base URL</label><input type="text" id="CUSTOM_LLM_BASE_URL" placeholder="https://api.openai.com/v1"></div>
+              <div class="form-group"><label>Custom API Key</label><input type="password" id="CUSTOM_LLM_API_KEY"></div>
+              <div class="form-group"><label>Custom Model Name</label><input type="text" id="CUSTOM_LLM_MODEL" placeholder="gpt-4o-mini"></div>
+            </div>
+            <button type="submit" class="btn btn-primary">Save Provider Config</button>
+          </form>
+        </div>
+
+        <div class="card">
+          <h2>Vobiz SIP Telephony</h2>
+          <form
+            onsubmit="event.preventDefault(); saveSettingsGroup('vobiz', ['VOBIZ_SIP_DOMAIN', 'VOBIZ_USERNAME', 'VOBIZ_PASSWORD', 'VOBIZ_OUTBOUND_NUMBER', 'OUTBOUND_TRUNK_ID']);">
+            <div class="form-group"><label>SIP Domain</label><input type="text" id="VOBIZ_SIP_DOMAIN"></div>
+            <div class="form-group"><label>Username</label><input type="text" id="VOBIZ_USERNAME"></div>
+            <div class="form-group"><label>Password</label><input type="password" id="VOBIZ_PASSWORD"></div>
+            <div class="form-group"><label>Outbound Number</label><input type="text" id="VOBIZ_OUTBOUND_NUMBER"
+                placeholder="+91..."></div>
+            <div class="form-group"><label>SIP Trunk ID (Auto-filled on Create)</label><input type="text" id="OUTBOUND_TRUNK_ID" placeholder="ST_..."></div>
+            <div class="flex mt-1">
+              <button type="submit" class="btn btn-primary">Save Vobiz Config</button>
+              <button type="button" class="btn" onclick="createSIPTrunk()">⚡ Create SIP Trunk</button>
+            </div>
+            <div id="trunk-status" class="mt-1" style="font-family: var(--mono); font-size: 0.8rem;"></div>
+          </form>
+        </div>
+
+        
+      </div>
+    </div>
+
+    <!-- LIVE LOGS -->
+    <div id="live-logs" class="panel">
+      <div class="card">
+        <div class="flex-between mb-1">
+          <h2>📋 System Logs</h2>
+          <div class="flex">
+            <select id="log-level" onchange="loadLogs()">
+              <option value="">All Levels</option>
+              <option value="info">Info</option>
+              <option value="warning">Warning</option>
+              <option value="error">Error</option>
+            </select>
+            <button class="btn btn-small" id="log-pause-btn" onclick="toggleLogRefresh()">⏸ Pause</button>
+            <button class="btn btn-small btn-danger" onclick="apiDel('/api/logs').then(loadLogs)">Clear</button>
+          </div>
+        </div>
+        <div id="logs-container"></div>
+      </div>
+    </div>
+
+    <!-- Call Details Popup Modal -->
+    <div id="call-details-modal" class="hidden" style="position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:1000; display:flex; align-items:center; justify-content:center; padding:1rem;">
+      <div class="card" style="width: 100%; max-width: 800px; max-height: 90vh; overflow-y: auto;">
+        <div class="flex-between mb-1">
+          <h2>📞 Call Details</h2>
+          <button class="btn btn-small" onclick="closeCallDetailsModal()">✕ Close</button>
+        </div>
+        
+        <div class="grid-2">
+          <div class="card">
+            <h3>Call Information</h3>
+            <div id="call-details-info">
+              <div class="flex">
+                <span style="color: var(--text2);">Room Name:</span>
+                <span id="modal-room-name">-</span>
+              </div>
+              <div class="flex mt-1">
+                <span style="color: var(--text2);">Phone:</span>
+                <span id="modal-phone">-</span>
+              </div>
+              <div class="flex mt-1">
+                <span style="color: var(--text2);">Lead Name:</span>
+                <span id="modal-lead-name">-</span>
+              </div>
+              <div class="flex mt-1">
+                <span style="color: var(--text2);">Status:</span>
+                <span id="modal-status" class="badge pending">Pending</span>
+              </div>
+              <div class="flex mt-1">
+                <span style="color: var(--text2);">Duration:</span>
+                <span id="modal-duration">0:00</span>
+              </div>
+              <div class="flex mt-1">
+                <span style="color: var(--text2);">Participants:</span>
+                <span id="modal-participants">0</span>
+              </div>
+            </div>
+            
+            <div class="mt-2">
+              <button class="btn btn-primary" onclick="startCallFromModal()">Start Call</button>
+              <button class="btn btn-danger" onclick="endCallFromModal()" id="modal-end-call-btn" disabled>End Call</button>
+              <button class="btn" onclick="monitorCallFromModal()">Monitor Call</button>
+            </div>
+          </div>
+        
+        <div class="card">
+          <h3>Customer Context</h3>
+          <div id="modal-customer-context" style="color: var(--text2); font-size: 0.9rem;">
+            No context available
+          </div>
+        </div>
+      </div>
+
+      <div class="card mt-1">
+        <h3>Live Conversation</h3>
+        <div id="modal-conversation" style="height: 300px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; padding: 1rem; background: rgba(0,0,0,0.3); font-family: var(--mono); font-size: 0.9rem;">
+          <div style="color: var(--text2); text-align: center; padding: 2rem;">
+            Waiting for call to start...
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script>
+    // Core Utilities
+    const $ = id => document.getElementById(id);
+    const api = (path, opts) => fetch(path, opts).then(r => r.json());
+    const apiPost = (path, body) => fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json());
+    const apiPatch = (path, body) => fetch(path, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json());
+    const apiDel = path => fetch(path, { method: 'DELETE' }).then(r => r.json());
+    const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+
+    function toast(msg, type = 'ok') {
+      const t = document.createElement('div');
+      t.className = `toast ${type}`;
+      t.innerHTML = `<strong>${type === 'error' ? '❌' : type === 'warn' ? '⚠️' : '✅'}</strong> <span>${msg}</span>`;
+      $('toast-container').appendChild(t);
+      setTimeout(() => { t.style.animation = 'fadeOut 0.3s forwards'; setTimeout(() => t.remove(), 300); }, 3000);
+    }
+
+    function switchTab(name) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      event.target.classList.add('active');
+      $(name).classList.add('active');
+
+      if (name === 'stats') loadStats();
+      if (name === 'call') loadAgentProfiles();
+      if (name === 'call-monitor') initCallMonitor();
+      if (name === 'campaigns') { loadCampaigns(); loadAgentProfiles(); }
+      if (name === 'uploads') { loadUploadedLists(); loadAgentProfiles(); }
+      if (name === 'agents') { loadVoiceConfig(); loadAgentProfiles(); }
+      if (name === 'prompt') loadPrompt();
+      if (name === 'appointments') loadAppointments();
+      if (name === 'logs-db') loadCalls();
+      if (name === 'crm') loadCRM();
+      if (name === 'settings') loadSettings();
+      if (name === 'live-logs') loadLogs();
+      if (name === 'users') loadUsers();
+    }
+
+    // Stats & Charts
+    let charts = {};
+    async function loadStats() {
+      try {
+        const d = await api('/api/stats');
+        if (!d || d.detail) return;
+        $('kpi-total').textContent = d.total_calls || 0;
+        $('kpi-completed').textContent = d.completed_calls || 0;
+        $('kpi-rejected').textContent = d.not_interested || 0;
+        $('kpi-no-answered').textContent = d.no_answered || 0;
+
+        // Render charts
+        const outCtx = $('chart-outcomes').getContext('2d');
+        if (charts.outcomes) charts.outcomes.destroy();
+        const outcomes = d.outcomes || {};
+        charts.outcomes = new Chart(outCtx, {
+          type: 'doughnut',
+          data: {
+            labels: Object.keys(outcomes),
+            datasets: [{ data: Object.values(outcomes), backgroundColor: ['#00ff88', '#00ccff', '#ffaa00', '#ff4d4d', '#5a5a5a'], borderWidth: 0 }]
+          },
+          options: { plugins: { legend: { position: 'right', labels: { color: '#ccc' } } }, cutout: '70%' }
+        });
+
+        const timeCtx = $('chart-timeline').getContext('2d');
+        if (charts.timeline) charts.timeline.destroy();
+        const timeline = (d.timeline || []).reverse();
+        charts.timeline = new Chart(timeCtx, {
+          type: 'line',
+          data: {
+            labels: timeline.map(t => t.date.substring(5)),
+            datasets: [{ label: 'Calls', data: timeline.map(t => t.count), borderColor: '#00ccff', backgroundColor: 'rgba(0, 204, 255, 0.1)', fill: true, tension: 0.4 }]
+          },
+          options: { scales: { y: { beginAtZero: true, grid: { color: '#252525' }, ticks: { color: '#aaa' } }, x: { grid: { color: '#252525' }, ticks: { color: '#aaa' } } }, plugins: { legend: { display: false } } }
+        });
+      } catch (e) { console.error('Stats error', e); }
+    }
+
+    // Single Call
+    async function dispatchSingleCall() {
+      try {
+        const btn = document.querySelector('#call-form button');
+        btn.disabled = true; btn.textContent = 'Dialing...';
+
+        const payload = {
+          phone: $('call-phone').value,
+          lead_name: $('call-lead').value || 'there',
+          customer_context: $('call-context').value || '',
+          agent_profile_id: $('call-profile').value || null,
+          system_prompt: $('call-use-custom').checked ? $('call-prompt').value : null
+        };
+
+        const res = await apiPost('/api/call', payload);
+        if (res.detail) throw new Error(res.detail);
+
+        toast('Call dispatched successfully!');
+        $('call-result').textContent = `Room created: ${res.room}. Connecting...`;
+      } catch (e) {
+        toast(e.message, 'error');
+        $('call-result').textContent = `Error: ${e.message}`;
+      } finally {
+        const btn = document.querySelector('#call-form button');
+        btn.disabled = false; btn.textContent = 'Dial Now 📞';
+      }
+    }
+
+    // Call Monitor WebSocket Functions
+    let callMonitorWs = null;
+    let currentMonitoringRoom = null;
+    let callStartTime = null;
+    let callStatusInterval = null;
+
+    function initCallMonitor() {
+      // Initialize the call monitor interface
+      updateMonitorStatus('Ready to monitor calls');
+    }
+
+    async function startMonitoring() {
+      const roomName = $('monitor-room-name').value.trim();
+      if (!roomName) {
+        toast('Please enter a room name', 'error');
+        return;
+      }
+
+      try {
+        // Stop any existing monitoring
+        if (callMonitorWs) {
+          stopMonitoring();
+        }
+
+        // Create WebSocket connection
+        const clientId = 'monitor_' + Date.now();
+        const wsUrl = `ws://${window.location.host}/ws/${clientId}`;
+        callMonitorWs = new WebSocket(wsUrl);
+
+        callMonitorWs.onopen = () => {
+          console.log('WebSocket connected');
+          // Subscribe to the call room
+          callMonitorWs.send(JSON.stringify({
+            type: 'subscribe_call',
+            room_name: roomName
+          }));
+          currentMonitoringRoom = roomName;
+          updateMonitorStatus(`Monitoring room: ${roomName}`);
+          
+          // Start polling call status
+          startCallStatusPolling(roomName);
+          
+          // Clear conversation log
+          $('conversation-log').innerHTML = '<div style="color: var(--text2); text-align: center; padding: 1rem;">Connected to room. Waiting for conversation data...</div>';
+        };
+
+        callMonitorWs.onmessage = (event) => {
+          const message = JSON.parse(event.data);
+          handleCallMonitorMessage(message);
+        };
+
+        callMonitorWs.onerror = (error) => {
+          console.error('WebSocket error:', error);
+          toast('WebSocket connection error', 'error');
+          updateMonitorStatus('Connection error');
+        };
+
+        callMonitorWs.onclose = () => {
+          console.log('WebSocket disconnected');
+          if (currentMonitoringRoom) {
+            updateMonitorStatus('Disconnected from room');
+          }
+          stopCallStatusPolling();
+        };
+
+      } catch (error) {
+        console.error('Failed to start monitoring:', error);
+        toast('Failed to start monitoring', 'error');
+        updateMonitorStatus('Failed to connect');
+      }
+    }
+
+    function handleCallMonitorMessage(message) {
+      console.log('Received message:', message);
+      
+      switch (message.type) {
+        case 'subscribed':
+          toast(`Subscribed to room: ${message.room_name}`, 'ok');
+          break;
+          
+        case 'call_event':
+          handleCallEvent(message.data);
+          break;
+          
+        case 'participant_disconnected':
+          handleParticipantDisconnected(message);
+          break;
+          
+        case 'call_ended':
+          handleCallEnded(message);
+          break;
+          
+        default:
+          console.log('Unknown message type:', message.type);
+      }
+    }
+
+    function handleCallEvent(eventData) {
+      // Display conversation events
+      const timestamp = new Date().toLocaleTimeString();
+      const conversationLog = $('conversation-log');
+      
+      if (eventData.speaker && eventData.text) {
+        const speakerClass = eventData.speaker === 'AI' ? 'ai-message' : 'user-message';
+        const speakerLabel = eventData.speaker === 'AI' ? '🤖 AI' : '👤 User';
+        
+        const messageHtml = `
+          <div class="conversation-message ${speakerClass}" style="margin-bottom: 0.5rem; padding: 0.5rem; border-left: 3px solid ${eventData.speaker === 'AI' ? 'var(--accent)' : 'var(--accent2)'}; background: rgba(255,255,255,0.02);">
+            <div style="color: var(--text2); font-size: 0.8rem; margin-bottom: 0.25rem;">[${timestamp}] ${speakerLabel}</div>
+            <div style="color: var(--text);">${escapeHtml(eventData.text)}</div>
+          </div>
+        `;
+        
+        conversationLog.innerHTML += messageHtml;
+        conversationLog.scrollTop = conversationLog.scrollHeight;
+      }
+      
+      // Update other call info if available
+      if (eventData.status) {
+        $('call-status').textContent = eventData.status;
+      }
+    }
+
+    function handleParticipantDisconnected(message) {
+      // Handle participant disconnection
+      console.log('Participant disconnected:', message);
+      $('call-status').textContent = 'Disconnected';
+      $('call-participants').textContent = '0';
+      
+      const conversationLog = $('conversation-log');
+      const disconnectMessage = `
+        <div style="text-align: center; color: var(--warn); padding: 1rem; margin-top: 1rem; border: 1px solid var(--warn); border-radius: 8px;">
+          📱 Participant Disconnected<br>
+          <small>${message.phone_number || 'User'} hung up</small><br>
+          <small>${new Date().toLocaleString()}</small>
+        </div>
+      `;
+      conversationLog.innerHTML += disconnectMessage;
+      conversationLog.scrollTop = conversationLog.scrollHeight;
+    }
+
+
+    function handleCallEnded(message) {
+      updateMonitorStatus(`Call ended: ${message.message}`);
+      $('call-status').textContent = 'Ended';
+      stopCallStatusPolling();
+      
+      const conversationLog = $('conversation-log');
+      const endMessage = `
+        <div style="text-align: center; color: var(--danger); padding: 1rem; margin-top: 1rem; border: 1px solid var(--danger); border-radius: 8px;">
+          📞 Call Ended<br>
+          <small>${message.message}</small><br>
+          <small>${new Date().toLocaleString()}</small>
+        </div>
+      `;
+      conversationLog.innerHTML += endMessage;
+    }
+
+    async function endCall() {
+      if (!currentMonitoringRoom) {
+        toast('No active call to end', 'error');
+        return;
+      }
+
+      if (!confirm('Are you sure you want to end this call?')) {
+        return;
+      }
+
+      try {
+        const response = await apiPost(`/api/call/${currentMonitoringRoom}/end`);
+        if (response.detail) {
+          throw new Error(response.detail);
+        }
+        
+        toast('Call ended successfully', 'ok');
+        // The WebSocket will receive the call_ended event
+      } catch (error) {
+        console.error('Failed to end call:', error);
+        toast('Failed to end call: ' + error.message, 'error');
+      }
+    }
+
+    function stopMonitoring() {
+      if (callMonitorWs) {
+        // Send unsubscribe message if still connected
+        if (callMonitorWs.readyState === WebSocket.OPEN && currentMonitoringRoom) {
+          callMonitorWs.send(JSON.stringify({
+            type: 'unsubscribe_call',
+            room_name: currentMonitoringRoom
+          }));
+        }
+        
+        callMonitorWs.close();
+        callMonitorWs = null;
+      }
+      
+      currentMonitoringRoom = null;
+      stopCallStatusPolling();
+      updateMonitorStatus('Monitoring stopped');
+      
+      // Reset UI
+      $('call-status').textContent = 'Not Connected';
+      $('call-participants').textContent = '0';
+      $('call-duration').textContent = '0:00';
+    }
+
+    function updateMonitorStatus(status) {
+      $('monitor-status').textContent = status;
+    }
+
+    async function startCallStatusPolling(roomName) {
+      // Poll more frequently (every 3 seconds) for real-time disconnection detection
+      callStatusInterval = setInterval(async () => {
+        try {
+          const status = await api(`/api/call/${roomName}/status`);
+          if (status && !status.detail) {
+            $('call-status').textContent = status.active ? 'Active' : 'Inactive';
+            $('call-participants').textContent = status.participants || 0;
+            
+            // Start timing only when participants join (user picks up the call)
+            if (status.active && status.participants > 0 && !callStartTime) {
+              callStartTime = new Date();
+            }
+            
+            // Stop timing and reflect disconnection when participants drop to 0
+            if (callStartTime && status.participants === 0) {
+              // Keep the final duration but stop updating
+              callStartTime = null;
+              $('call-status').textContent = 'Disconnected';
+            }
+            
+            if (callStartTime) {
+              const duration = Math.floor((new Date() - callStartTime) / 1000);
+              const minutes = Math.floor(duration / 60);
+              const seconds = duration % 60;
+              $('call-duration').textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            }
+          }
+        } catch (error) {
+          console.error('Failed to poll call status:', error);
+        }
+      }, 3000);
+    }
+
+    function stopCallStatusPolling() {
+      if (callStatusInterval) {
+        clearInterval(callStatusInterval);
+        callStatusInterval = null;
+      }
+      callStartTime = null;
+    }
+
+    // Call Details Modal Functions
+    let currentModalRow = null;
+    let modalCallWs = null;
+    let modalCallStatusInterval = null;
+    let modalCallStartTime = null;
+
+    function openCallDetailsModal(rowId) {
+      const row = currentModalRow = uploadedRowsCache.find(r => r.id === rowId);
+      if (!row) {
+        toast('Call details not found', 'error');
+        return;
+      }
+
+      // Populate modal with call details
+      $('modal-room-name').textContent = row.room_name || 'Not started';
+      $('modal-phone').textContent = row.phone_number || 'N/A';
+      $('modal-lead-name').textContent = row.lead_name || 'N/A';
+      
+      // Display customer context
+      const context = row.data || {};
+      const contextText = Object.entries(context)
+        .filter(([key, value]) => value && value.trim())
+        .map(([key, value]) => `${key}: ${value}`)
+        .join('\n') || 'No context available';
+      $('modal-customer-context').textContent = contextText;
+
+      // Update status based on call_status
+      updateModalCallStatus(row.call_status || 'pending');
+
+      // Show modal
+      $('call-details-modal').classList.remove('hidden');
+
+      // Start monitoring if call is active
+      if (row.room_name && row.call_status === 'in_progress') {
+        startModalMonitoring(row.room_name);
+      }
+    }
+
+    function closeCallDetailsModal() {
+      stopModalMonitoring();
+      $('call-details-modal').classList.add('hidden');
+      currentModalRow = null;
+    }
+
+    function updateModalCallStatus(status) {
+      const statusElement = $('modal-status');
+      const endCallBtn = $('modal-end-call-btn');
+      
+      statusElement.className = `badge ${status}`;
+      statusElement.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+      
+      // Enable/disable end call button based on status
+      endCallBtn.disabled = status !== 'in_progress';
+      
+      if (status === 'in_progress') {
+        statusElement.className = 'badge active';
+      } else if (status === 'completed') {
+        statusElement.className = 'badge completed';
+      } else if (status === 'failed') {
+        statusElement.className = 'badge failed';
+      } else {
+        statusElement.className = 'badge pending';
+      }
+    }
+
+    async function startCallFromModal() {
+      if (!currentModalRow) {
+        toast('No call selected', 'error');
+        return;
+      }
+
+      try {
+        const btn = document.querySelector('button[onclick="startCallFromModal()"]');
+        btn.disabled = true;
+        btn.textContent = 'Starting...';
+
+        // Use the existing callUploadedRow function
+        const res = await apiPost(`/api/uploaded-list-rows/${currentModalRow.id}/call`, {
+          agent_profile_id: $('upload-profile').value || null
+        });
+        
+        if (res.detail) throw new Error(res.detail);
+        
+        toast(`Call dispatched to ${res.phone}`);
+        
+        // Update modal immediately with response data
+        if (res.room) {
+          $('modal-room-name').textContent = res.room;
+          currentModalRow.room_name = res.room;
+          updateModalCallStatus('in_progress');
+          startModalMonitoring(res.room);
+        }
+        
+        // Also refresh the uploaded rows to get latest status
+        await loadUploadedRows(currentUploadListId);
+        
+      } catch (error) {
+        toast('Failed to start call: ' + error.message, 'error');
+      } finally {
+        const btn = document.querySelector('button[onclick="startCallFromModal()"]');
+        btn.disabled = false;
+        btn.textContent = 'Start Call';
+      }
+    }
+
+    async function endCallFromModal() {
+      // Get room name from multiple sources
+      let roomName = null;
+      if (currentModalRow && currentModalRow.room_name) {
+        roomName = currentModalRow.room_name;
+      } else {
+        // Try to get room name from the modal display
+        const modalRoomElement = $('modal-room-name');
+        if (modalRoomElement && modalRoomElement.textContent && modalRoomElement.textContent !== 'Not started' && modalRoomElement.textContent !== '-') {
+          roomName = modalRoomElement.textContent.trim();
+        }
+      }
+
+      console.log('End call attempt - currentModalRow:', currentModalRow);
+      console.log('End call attempt - roomName:', roomName);
+
+      if (!roomName) {
+        toast('No active call to end - room name not available', 'error');
+        return;
+      }
+
+      if (!confirm('Are you sure you want to end this call?')) {
+        return;
+      }
+
+      try {
+        const response = await apiPost(`/api/call/${roomName}/end`);
+        if (response.detail) {
+          throw new Error(response.detail);
+        }
+        
+        toast('Call ended successfully', 'ok');
+        updateModalCallStatus('completed');
+        stopModalMonitoring();
+        
+        // Update the row data as well
+        if (currentModalRow) {
+          currentModalRow.room_name = roomName;
+          currentModalRow.call_status = 'completed';
+        }
+      } catch (error) {
+        toast('Failed to end call: ' + error.message, 'error');
+      }
+    }
+
+    function monitorCallFromModal() {
+      if (!currentModalRow || !currentModalRow.room_name) {
+        toast('No active call to monitor', 'error');
+        return;
+      }
+
+      startModalMonitoring(currentModalRow.room_name);
+      toast('Started monitoring call', 'ok');
+    }
+
+    async function startModalMonitoring(roomName) {
+      // Stop any existing monitoring
+      stopModalMonitoring();
+
+      try {
+        // Create WebSocket connection for modal
+        const clientId = 'modal_' + Date.now();
+        const wsUrl = `ws://${window.location.host}/ws/${clientId}`;
+        console.log('Creating WebSocket connection to:', wsUrl);
+        
+        modalCallWs = new WebSocket(wsUrl);
+
+        modalCallWs.onopen = () => {
+          console.log('✅ Modal WebSocket connected successfully to room:', roomName);
+          
+          // Subscribe to the call room
+          const subscribeMsg = {
+            type: 'subscribe_call',
+            room_name: roomName
+          };
+          console.log('📤 Sending subscription message:', subscribeMsg);
+          modalCallWs.send(JSON.stringify(subscribeMsg));
+          
+          // Start polling call status
+          startModalCallStatusPolling(roomName);
+          
+          // Clear conversation log and show connected status
+          $('modal-conversation').innerHTML = `
+            <div style="color: var(--accent); text-align: center; padding: 1rem;">
+              🎧 Connected to room: ${roomName}<br>
+              <small>Waiting for conversation...</small>
+            </div>
+          `;
+        };
+
+        modalCallWs.onmessage = (event) => {
+          const message = JSON.parse(event.data);
+          console.log('Modal WebSocket received message:', message);
+          handleModalCallMessage(message);
+        };
+
+        modalCallWs.onerror = (error) => {
+          console.error('Modal WebSocket error:', error);
+          console.error('WebSocket state:', modalCallWs.readyState);
+        };
+
+        modalCallWs.onclose = () => {
+          console.log('Modal WebSocket disconnected, code:', event.code, 'reason:', event.reason);
+          stopModalCallStatusPolling();
+        };
+
+      } catch (error) {
+        console.error('Failed to start modal monitoring:', error);
+      }
+    }
+
+    function handleModalCallMessage(message) {
+      switch (message.type) {
+        case 'call_event':
+          handleModalCallEvent(message.data);
+          break;
+        case 'participant_disconnected':
+          handleModalParticipantDisconnected(message);
+          break;
+        case 'call_ended':
+          handleModalCallEnded(message);
+          break;
+      }
+    }
+
+    function handleModalCallEvent(eventData) {
+      console.log('🎯 Handling call event:', eventData);
+      const timestamp = new Date().toLocaleTimeString();
+      const conversationLog = $('modal-conversation');
+      
+      // Clear the "waiting" message if this is the first message
+      if (conversationLog.innerHTML.includes('Waiting for conversation')) {
+        conversationLog.innerHTML = '';
+      }
+      
+      if (eventData.speaker && eventData.text) {
+        const speakerLabel = eventData.speaker === 'AI' ? '🤖 AI' : '👤 User';
+        const speakerColor = eventData.speaker === 'AI' ? 'var(--accent)' : 'var(--accent2)';
+        
+        const messageHtml = `
+          <div style="margin-bottom: 0.5rem; padding: 0.5rem; border-left: 3px solid ${speakerColor}; background: rgba(255,255,255,0.02); border-radius: 4px;">
+            <div style="color: var(--text2); font-size: 0.8rem; margin-bottom: 0.25rem;">[${timestamp}] ${speakerLabel}</div>
+            <div style="color: var(--text); line-height: 1.4;">${escapeHtml(eventData.text)}</div>
+          </div>
+        `;
+        
+        conversationLog.innerHTML += messageHtml;
+        conversationLog.scrollTop = conversationLog.scrollHeight;
+        console.log('✅ Added conversation message:', speakerLabel, eventData.text);
+      } else {
+        console.log('⚠️ Invalid event data:', eventData);
+      }
+    }
+
+    function handleModalParticipantDisconnected(message) {
+      console.log('Participant disconnected in modal:', message);
+      updateModalCallStatus('completed');
+      $('modal-participants').textContent = '0';
+      
+      const conversationLog = $('modal-conversation');
+      const disconnectMessage = `
+        <div style="text-align: center; color: var(--warn); padding: 1rem; margin-top: 1rem; border: 1px solid var(--warn); border-radius: 8px;">
+          📱 Participant Disconnected<br>
+          <small>${message.phone_number || 'User'} hung up</small><br>
+          <small>${new Date().toLocaleString()}</small>
+        </div>
+      `;
+      conversationLog.innerHTML += disconnectMessage;
+      conversationLog.scrollTop = conversationLog.scrollHeight;
+    }
+
+
+    function handleModalCallEnded(message) {
+      updateModalCallStatus('completed');
+      stopModalMonitoring();
+      
+      const conversationLog = $('modal-conversation');
+      const endMessage = `
+        <div style="text-align: center; color: var(--danger); padding: 1rem; margin-top: 1rem; border: 1px solid var(--danger); border-radius: 8px;">
+          📞 Call Ended<br>
+          <small>${message.message}</small><br>
+          <small>${new Date().toLocaleString()}</small>
+        </div>
+      `;
+      conversationLog.innerHTML += endMessage;
+      conversationLog.scrollTop = conversationLog.scrollHeight;
+    }
+
+    function stopModalMonitoring() {
+      if (modalCallWs) {
+        if (modalCallWs.readyState === WebSocket.OPEN) {
+          modalCallWs.close();
+        }
+        modalCallWs = null;
+      }
+      stopModalCallStatusPolling();
+    }
+
+    async function startModalCallStatusPolling(roomName) {
+      // Poll more frequently (every 3 seconds) for real-time disconnection detection
+      modalCallStatusInterval = setInterval(async () => {
+        try {
+          const status = await api(`/api/call/${roomName}/status`);
+          if (status && !status.detail) {
+            $('modal-participants').textContent = status.participants || 0;
+            
+            // Start timing only when participants join (user picks up the call)
+            if (status.active && status.participants > 0 && !modalCallStartTime) {
+              modalCallStartTime = new Date();
+              updateModalCallStatus('in_progress');
+            }
+            
+            // Stop timing and reflect disconnection when participants drop to 0
+            if (modalCallStartTime && status.participants === 0) {
+              // Keep the final duration but stop updating
+              modalCallStartTime = null;
+              updateModalCallStatus('completed');
+            }
+            
+            if (modalCallStartTime) {
+              const duration = Math.floor((new Date() - modalCallStartTime) / 1000);
+              const minutes = Math.floor(duration / 60);
+              const seconds = duration % 60;
+              $('modal-duration').textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            }
+          }
+        } catch (error) {
+          console.error('Failed to poll modal call status:', error);
+        }
+      }, 3000);
+    }
+
+    function stopModalCallStatusPolling() {
+      if (modalCallStatusInterval) {
+        clearInterval(modalCallStatusInterval);
+        modalCallStatusInterval = null;
+      }
+      modalCallStartTime = null;
+    }
+
+    // Test function for debugging - can be called from browser console
+    async function testModalConversation(roomName = null) {
+      const testRoom = roomName || (currentModalRow && currentModalRow.room_name) || 'call-919658002210-test';
+      
+      console.log('🧪 Testing conversation events for room:', testRoom);
+      
+      const testEvents = [
+        { speaker: 'AI', text: 'ନମସ୍କାର, ମୁଁ ଆପଣଙ୍କ ସହ କଥା ହେଉଛି କି?' },
+        { speaker: 'User', text: 'Hello, this is a test response' },
+        { speaker: 'AI', text: 'I am calling about your loan payment. Do you have a moment to discuss?' }
+      ];
+      
+      for (let i = 0; i < testEvents.length; i++) {
+        const event = testEvents[i];
+        try {
+          const response = await apiPost(`/api/call-monitor/${testRoom}/event`, event);
+          console.log(`✅ Test event ${i + 1} sent:`, response);
+          
+          // Simulate receiving the event in the modal
+          if (modalCallWs && modalCallWs.readyState === WebSocket.OPEN) {
+            handleModalCallEvent(event);
+          }
+        } catch (error) {
+          console.error(`❌ Test event ${i + 1} failed:`, error);
+        }
+        
+        // Small delay between events
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+      
+      console.log('🏁 Test completed! Check the modal conversation area.');
+    }
+
+    // Make test function available globally
+    window.testModalConversation = testModalConversation;
+
+    // Agent Profiles
+    let profilesCache = [];
+    async function loadAgentProfiles() {
+      try {
+        const res = await api('/api/agent-profiles');
+        if (res && !res.detail) {
+          profilesCache = res;
+          // Populate dropdowns
+          const selects = ['call-profile', 'camp-profile', 'upload-profile'];
+          selects.forEach(id => {
+            const el = $(id);
+            if (!el) return;
+            el.innerHTML = '<option value="">-- Use Default --</option>';
+            res.forEach(p => {
+              el.innerHTML += `<option value="${p.id}">${p.name} ${p.is_default ? '(Default)' : ''}</option>`;
+            });
+          });
+
+          // Populate table
+          const tb = $('agent-table').querySelector('tbody');
+          if (tb) {
+            tb.innerHTML = '';
+            res.forEach(p => {
+              tb.innerHTML += `<tr>
+            <td>${p.name} ${p.is_default ? '<span class="badge active">Default</span>' : ''}</td>
+            <td>${p.voice_model || 'bulbul:v3'}</td>
+            <td>${p.voice}</td>
+            <td>${p.language_code || 'od-IN'}</td>
+            <td>${p.model}</td>
+            <td>
+               <div class="action-buttons">
+              <button class="btn btn-small" onclick="editAgentProfile('${p.id}')">✏️</button>
+              <button class="btn btn-small" onclick="setDefaultAgentProfile('${p.id}')">★ Make Default</button>
+              <button class="btn btn-small btn-danger" onclick="deleteAgentProfile('${p.id}')">🗑️</button>
+           </div>
+              </td>
+          </tr>`;
+            });
+          }
+        }
+      } catch (e) { console.error('Agent profiles error', e); }
+    }
+
+    async function saveAgentProfile() {
+      const id = $('agent-id').value;
+      const payload = {
+        name: $('agent-name').value,
+        voice: $('agent-voice').value,
+        voice_model: $('agent-voice-model').value,
+        language_code: $('agent-language-code').value,
+        model: $('agent-model').value,
+        system_prompt: $('agent-prompt').value,
+        is_default: $('agent-default').checked,
+        enabled_tools: '[]' // Simplified for UI
+      };
+
+      try {
+        const res = id ? await apiPatch(`/api/agent-profiles/${id}`, payload) : await apiPost('/api/agent-profiles', payload);
+        if (res.detail && typeof res.detail === 'string') throw new Error(res.detail);
+        if (res.detail) throw new Error("Validation Error");
+        toast('Profile saved successfully');
+        resetAgentForm();
+        loadAgentProfiles();
+      } catch (e) { toast(e.message, 'error'); }
+    }
+
+    function editAgentProfile(id) {
+      const p = profilesCache.find(x => x.id === id);
+      if (!p) return;
+      $('agent-id').value = p.id;
+      $('agent-name').value = p.name;
+      $('agent-voice-model').value = p.voice_model || 'bulbul:v3';
+      updateVoiceOptions(); // Refresh voice dropdown based on selected model
+      $('agent-voice').value = p.voice || 'shubh';
+      $('agent-language-code').value = p.language_code || 'od-IN';
+      $('agent-model').value = p.model;
+      $('agent-prompt').value = p.system_prompt || '';
+      $('agent-default').checked = p.is_default === 1;
+    }
+
+    function resetAgentForm() {
+      $('agent-id').value = '';
+      $('agent-name').value = '';
+      $('agent-voice-model').value = 'bulbul:v3';
+      updateVoiceOptions();
+      $('agent-language-code').value = 'od-IN';
+      $('agent-prompt').value = '';
+      $('agent-default').checked = false;
+    }
+
+    // Voice configuration cache
+    let voiceConfig = null;
+
+    async function loadVoiceConfig() {
+      if (voiceConfig) return; // Already loaded
+      try {
+        voiceConfig = await api('/api/voice-config');
+        // Initialize voice options on first load
+        updateVoiceOptions();
+      } catch (e) {
+        console.error('Failed to load voice config', e);
+      }
+    }
+
+    function updateVoiceOptions() {
+      if (!voiceConfig) {
+        // Fallback if config not loaded yet - try loading it
+        loadVoiceConfig().then(() => updateVoiceOptions());
+        return;
+      }
+
+      const selectedModel = $('agent-voice-model').value;
+      const voiceSelect = $('agent-voice');
+      const modelData = voiceConfig.voice_models[selectedModel];
+
+      if (!modelData) return;
+
+      voiceSelect.innerHTML = '';
+      Object.entries(modelData.voices).forEach(([voiceId, voiceLabel]) => {
+        const option = document.createElement('option');
+        option.value = voiceId;
+        option.textContent = voiceLabel;
+        voiceSelect.appendChild(option);
+      });
+    }
+
+    async function deleteAgentProfile(id) {
+      if (!confirm('Delete this profile?')) return;
+      try {
+        await apiDel(`/api/agent-profiles/${id}`);
+        toast('Profile deleted');
+        loadAgentProfiles();
+      } catch (e) { toast('Delete failed', 'error'); }
+    }
+
+    async function setDefaultAgentProfile(id) {
+      try {
+        await apiPost(`/api/agent-profiles/${id}/set-default`, {});
+        toast('Default profile updated');
+        loadAgentProfiles();
+      } catch (e) { toast('Update failed', 'error'); }
+    }
+
+    // Prompt
+    async function loadPrompt() {
+      const res = await api('/api/prompt');
+      if (res && !res.detail) $('global-prompt').value = res.prompt || '';
+    }
+
+    async function savePrompt() {
+      try {
+        await apiPost('/api/prompt', { prompt: $('global-prompt').value });
+        toast('Global prompt saved');
+      } catch (e) { toast('Save failed', 'error'); }
+    }
+
+    async function resetPrompt() {
+      if (!confirm('Reset to default system prompt?')) return;
+      try {
+        const res = await apiDel('/api/prompt');
+        $('global-prompt').value = res.prompt;
+        toast('Prompt reset');
+      } catch (e) { toast('Reset failed', 'error'); }
+    }
+
+    // Campaigns
+    async function loadCampaigns() {
+      try {
+        const res = await api('/api/campaigns');
+        if (!res || res.detail) return;
+        const tb = $('camp-table').querySelector('tbody');
+        tb.innerHTML = '';
+        res.forEach(c => {
+          let badge = 'pending';
+          if (c.status === 'active') badge = 'active';
+          if (c.status === 'completed') badge = 'completed';
+          if (c.status === 'paused') badge = 'paused';
+
+          tb.innerHTML += `<tr>
+        <td><strong>${c.name}</strong></td>
+        <td>${c.schedule_type} @ ${c.schedule_time}</td>
+        <td><span class="badge ${badge}">${c.status}</span></td>
+        <td>OK: ${c.total_dispatched} | Fail: ${c.total_failed}</td>
+        <td>${c.created_at.substring(0, 16).replace('T', ' ')}</td>
+        <td>
+          <button class="btn btn-small" onclick="runCampaign('${c.id}')" ${c.status === 'active' ? '' : 'disabled'}>▶ Run Now</button>
+          <button class="btn btn-small btn-danger" onclick="deleteCampaign('${c.id}')">Delete</button>
+        </td>
+      </tr>`;
+        });
+      } catch (e) { console.error(e); }
+    }
+
+    async function createCampaign() {
+      const fileInput = $('camp-csv');
+      if (!fileInput.files.length) return toast('Please select a CSV file', 'error');
+
+      const file = fileInput.files[0];
+      const reader = new FileReader();
+
+      reader.onload = async function (e) {
+        const text = e.target.result;
+        const lines = text.split('\n').filter(l => l.trim() !== '');
+        if (lines.length < 2) return toast('CSV is empty or invalid', 'error');
+
+        const headers = lines[0].split(',').map(h => h.trim());
+        const contacts = [];
+        for (let i = 1; i < lines.length; i++) {
+          const vals = lines[i].split(',');
+          let obj = {};
+          headers.forEach((h, idx) => { obj[h] = vals[idx] ? vals[idx].trim() : ''; });
+          if (obj.phone) contacts.push(obj);
+        }
+
+        const payload = {
+          name: $('camp-name').value,
+          schedule_type: $('camp-type').value,
+          schedule_time: $('camp-time').value,
+          call_delay_seconds: parseInt($('camp-delay').value),
+          agent_profile_id: $('camp-profile').value || null,
+          contacts: contacts
+        };
+
+        try {
+          const res = await apiPost('/api/campaigns', payload);
+          if (res.detail && typeof res.detail === 'string') throw new Error(res.detail);
+          if (res.detail) throw new Error("Validation error");
+          toast('Campaign created successfully');
+          $('camp-modal').classList.add('hidden');
+          loadCampaigns();
+        } catch (err) {
+          toast(err.message, 'error');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    window.runCampaign = async (id) => {
+      try {
+        await apiPost(`/api/campaigns/${id}/run`, {});
+        toast('Campaign dispatch started');
+        loadCampaigns();
+      } catch (e) { toast('Run failed', 'error'); }
+    }
+
+    window.deleteCampaign = async (id) => {
+      if (!confirm('Delete campaign?')) return;
+      try {
+        await apiDel(`/api/campaigns/${id}`);
+        toast('Campaign deleted');
+        loadCampaigns();
+      } catch (e) { toast('Delete failed', 'error'); }
+    }
+
+    // Excel Lists
+    let uploadedListsCache = [];
+    let uploadedRowsCache = [];
+    let currentUploadListId = null;
+    let currentUploadList = null;
+
+    function fileToBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result).split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function uploadExcelList() {
+      const fileInput = $('upload-file');
+      if (!fileInput.files.length) return toast('Please select an Excel or CSV file', 'error');
+      const file = fileInput.files[0];
+      const btn = document.querySelector('#upload-form button');
+      try {
+        btn.disabled = true;
+        btn.textContent = 'Uploading...';
+        $('upload-status').textContent = 'Reading file and saving rows...';
+        const file_base64 = await fileToBase64(file);
+        const res = await apiPost('/api/uploaded-lists', {
+          name: $('upload-name').value || file.name.replace(/\.[^.]+$/, ''),
+          filename: file.name,
+          file_base64
+        });
+        if (res.detail) throw new Error(res.detail);
+        toast(`Uploaded ${res.list.row_count || 0} rows`);
+        currentUploadListId = res.list.id;
+        $('upload-status').textContent = `Saved ${res.list.row_count || 0} rows from ${file.name}`;
+        fileInput.value = '';
+        await loadUploadedLists(currentUploadListId);
+      } catch (e) {
+        toast(e.message, 'error');
+        $('upload-status').textContent = e.message;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Upload List';
+      }
+    }
+
+    async function loadUploadedLists(preferredId = null) {
+      try {
+        const res = await api('/api/uploaded-lists');
+        if (!res || res.detail) return;
+        uploadedListsCache = res;
+        const tb = $('upload-lists-table').querySelector('tbody');
+        tb.innerHTML = '';
+        if (!res.length) {
+          tb.innerHTML = '<tr><td colspan="4">No uploaded lists yet.</td></tr>';
+          renderUploadedRows({ list: null, rows: [] });
+          return;
+        }
+        res.forEach(list => {
+          tb.innerHTML += `<tr>
+            <td><strong>${escapeHtml(list.name)}</strong><br><span style="color:var(--text2)">${escapeHtml(list.source_filename || '')}</span></td>
+            <td>${list.row_count || 0}</td>
+            <td>${list.created_at ? list.created_at.substring(0, 16).replace('T', ' ') : ''}</td>
+            <td><button class="btn btn-small" onclick="loadUploadedRows('${list.id}')">Open</button></td>
+          </tr>`;
+        });
+        const nextId = preferredId || currentUploadListId || res[0].id;
+        await loadUploadedRows(nextId);
+      } catch (e) { console.error(e); }
+    }
+
+    async function loadUploadedRows(listId = null) {
+      const id = listId || currentUploadListId;
+      if (!id) return;
+      try {
+        const res = await api(`/api/uploaded-lists/${id}/rows?limit=500`);
+        if (res.detail) throw new Error(res.detail);
+        currentUploadListId = id;
+        currentUploadList = res.list;
+        renderUploadedRows(res);
+      } catch (e) { toast(e.message, 'error'); }
+    }
+
+    function renderColumnSelect(id, columns, selected) {
+      const el = $(id);
+      el.innerHTML = '<option value="">-- Select column --</option>';
+      columns.forEach(col => {
+        el.innerHTML += `<option value="${escapeHtml(col)}" ${col === selected ? 'selected' : ''}>${escapeHtml(col)}</option>`;
+      });
+    }
+
+    function renderUploadedRows(res) {
+      const { list, rows } = res;
+      $('upload-current-title').textContent = `Uploaded Rows - ${list.name}`;
+      
+      // Populate cache for modal access
+      uploadedRowsCache = rows;
+      
+      // Populate column dropdowns
+      const phoneSelect = $('upload-phone-column');
+      const nameSelect = $('upload-name-column');
+      const currentPhone = phoneSelect.value;
+      const currentName = nameSelect.value;
+      
+      phoneSelect.innerHTML = '<option value="">-- Select --</option>';
+      nameSelect.innerHTML = '<option value="">-- Select --</option>';
+      
+      list.columns.forEach(col => {
+        phoneSelect.innerHTML += `<option value="${col}">${col}</option>`;
+        nameSelect.innerHTML += `<option value="${col}">${col}</option>`;
+      });
+      
+      phoneSelect.value = currentPhone || list.phone_column || '';
+      nameSelect.value = currentName || list.lead_name_column || '';
+      
+      // Render table
+      const tbody = $('upload-rows-table').querySelector('tbody');
+      if (!rows || rows.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="${list.columns.length + 2}">No rows found.</td></tr>`;
+        return;
+      }
+      rows.forEach(row => {
+        const cells = list.columns.map(col => `<td>${escapeHtml((row.data || {})[col] || '')}</td>`).join('');
+        const status = row.call_status || 'pending';
+        const statusClass = status === 'failed' ? 'failed' : status === 'dispatched' ? 'completed' : 'pending';
+        tbody.innerHTML += `<tr>
+          ${cells}
+          <td><span class="badge ${statusClass}">${escapeHtml(status)}</span></td>
+          <td><button class="btn btn-small" onclick="openCallDetailsModal('${row.id}')">Call</button></td>
+        </tr>`;
+      });
+    }
+
+    async function saveUploadedMapping() {
+      if (!currentUploadListId) return toast('Open a list first', 'warn');
+      try {
+        const res = await apiPatch(`/api/uploaded-lists/${currentUploadListId}/mapping`, {
+          phone_column: $('upload-phone-column').value || null,
+          lead_name_column: $('upload-name-column').value || null
+        });
+        if (res.detail) throw new Error(res.detail);
+        toast('Column mapping saved');
+        await loadUploadedRows(currentUploadListId);
+      } catch (e) { toast(e.message, 'error'); }
+    }
+
+    async function callUploadedRow(rowId, btn) {
+      try {
+        if (btn) { btn.disabled = true; btn.textContent = 'Calling...'; }
+        const res = await apiPost(`/api/uploaded-list-rows/${rowId}/call`, {
+          agent_profile_id: $('upload-profile').value || null
+        });
+        if (res.detail) throw new Error(res.detail);
+        toast(`Call dispatched to ${res.phone}`);
+        await loadUploadedRows(currentUploadListId);
+      } catch (e) {
+        toast(e.message, 'error');
+        await loadUploadedRows(currentUploadListId);
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = 'Call'; }
+      }
+    }
+
+    // Settings
+    async function loadSettings() {
+      try {
+        const res = await api('/api/settings');
+        if (!res || res.detail) return;
+        Object.keys(res).forEach(k => {
+          const el = $(k);
+          if (el) {
+            if (res[k].value) el.value = res[k].value;
+            if (res[k].configured && el.type === 'password') el.placeholder = '•••••••• (Configured)';
+          }
+        });
+
+        // Update custom LLM settings visibility
+        const llmProvider = $('LLM_PROVIDER');
+        if (llmProvider) {
+          const customSettings = $('custom-llm-settings');
+          if (customSettings) {
+            customSettings.classList.toggle('hidden', llmProvider.value !== 'custom');
+          }
+        }
+      } catch (e) { console.error(e); }
+    }
+
+    async function saveSettingsGroup(groupName, keys) {
+      const settings = {};
+      keys.forEach(k => {
+        const el = $(k);
+        if (el && el.value) settings[k] = el.value;
+      });
+
+      try {
+        await apiPost('/api/settings', { settings });
+        toast(`${groupName} settings saved!`);
+        loadSettings();
+      } catch (e) { toast('Save failed', 'error'); }
+    }
+
+    async function createSIPTrunk() {
+      try {
+        const btn = document.querySelector('button[onclick="createSIPTrunk()"]');
+        btn.disabled = true; btn.textContent = 'Creating...';
+
+        const res = await apiPost('/api/setup/trunk', {});
+        if (res.detail) throw new Error(res.detail);
+
+        if ($('OUTBOUND_TRUNK_ID')) $('OUTBOUND_TRUNK_ID').value = res.trunk_id;
+        $('trunk-status').innerHTML = `<span style="color:var(--accent)">✅ Trunk Created: ${res.trunk_id}</span>`;
+        toast('SIP Trunk Created successfully');
+        loadSettings();
+      } catch (e) {
+        toast(e.message, 'error');
+        $('trunk-status').innerHTML = `<span style="color:var(--danger)">❌ Failed: ${e.message}</span>`;
+      } finally {
+        const btn = document.querySelector('button[onclick="createSIPTrunk()"]');
+        btn.disabled = false; btn.textContent = '⚡ Create SIP Trunk';
+      }
+    }
+
+    // Call Logs
+    async function loadCalls(page = 1) {
+      try {
+        const res = await api(`/api/calls?page=${page}&limit=20`);
+        if (!res || res.detail) return;
+        const tb = $('calls-table').querySelector('tbody');
+        tb.innerHTML = '';
+        res.forEach(c => {
+          let bClass = 'pending';
+          if (c.outcome === 'booked') bClass = 'booked';
+          if (c.outcome === 'not_interested') bClass = 'failed';
+          tb.innerHTML += `<tr>
+        <td>${c.timestamp ? c.timestamp.substring(0, 16).replace('T', ' ') : ''}</td>
+        <td>${c.phone_number || ''}</td>
+        <td>${c.lead_name || c.customer_name || ''}</td>
+        <td><span class="badge ${bClass}">${c.outcome || 'unknown'}</span></td>
+        <td>${c.duration_seconds || 0}</td>
+        <td>${c.notes || ''}</td>
+        <td><button class="btn btn-small" onclick="viewCallLog('${c.room_name || ''}')" ${!c.room_name ? 'disabled' : ''}>View</button></td>
+      </tr>`;
+        });
+      } catch (e) { console.error(e); }
+    }
+
+    window.viewCallLog = async (roomName) => {
+      if (!roomName) return toast('No room name for this call', 'warn');
+      $('call-log-modal').classList.remove('hidden');
+      $('call-log-content').innerHTML = 'Loading...';
+      try {
+        const res = await api(`/api/call-monitor/${roomName}/history`);
+        if (res.detail) throw new Error(res.detail);
+        if (!res.history || res.history.length === 0) {
+          $('call-log-content').innerHTML = 'No conversation history found.';
+          return;
+        }
+        let html = '';
+        res.history.forEach(msg => {
+          const isAI = msg.speaker === 'AI';
+          const color = isAI ? 'var(--accent)' : 'var(--accent2)';
+          const label = isAI ? '🤖 AI' : '👤 User';
+          
+          let timestampStr = '';
+          try {
+             timestampStr = new Date(msg.timestamp).toLocaleTimeString();
+          } catch (err) {
+             timestampStr = msg.timestamp;
+          }
+          
+          html += `<div style="margin-bottom:0.5rem; padding:0.5rem; border-left:3px solid ${color}; background:rgba(255,255,255,0.02);">
+            <div style="color:var(--text2); font-size:0.8rem; margin-bottom:0.25rem;">[${timestampStr}] ${label}</div>
+            <div style="color:var(--text);">${escapeHtml(msg.text_content)}</div>
+          </div>`;
+        });
+        $('call-log-content').innerHTML = html;
+      } catch (e) {
+        $('call-log-content').innerHTML = `<span style="color:var(--danger)">Error: ${e.message}</span>`;
+      }
+    }
+
+    // Appointments
+    async function loadAppointments() {
+      try {
+        const date = $('appt-date').value;
+        const url = date ? `/api/appointments?date=${date}` : '/api/appointments';
+        const res = await api(url);
+        if (!res || res.detail) return;
+        const tb = $('appt-table').querySelector('tbody');
+        tb.innerHTML = '';
+        res.forEach(a => {
+          let bClass = a.status === 'cancelled' ? 'cancelled' : 'booked';
+          tb.innerHTML += `<tr>
+        <td>${a.date}</td>
+        <td>${a.time}</td>
+        <td>${a.name}</td>
+        <td>${a.phone}</td>
+        <td>${a.service}</td>
+        <td><span class="badge ${bClass}">${a.status}</span></td>
+        <td>
+          <button class="btn btn-small btn-danger" onclick="cancelAppointment('${a.id}')" ${a.status === 'cancelled' ? 'disabled' : ''}>Cancel</button>
+        </td>
+      </tr>`;
+        });
+      } catch (e) { console.error(e); }
+    }
+
+    window.cancelAppointment = async (id) => {
+      if (!confirm('Cancel appointment?')) return;
+      try {
+        await apiDel(`/api/appointments/${id}`);
+        toast('Appointment cancelled');
+        loadAppointments();
+      } catch (e) { toast('Cancel failed', 'error'); }
+    }
+
+    // CRM
+    async function loadCRM() {
+      try {
+        const res = await api('/api/crm');
+        if (!res || !res.data) return;
+        const tb = $('crm-table').querySelector('tbody');
+        tb.innerHTML = '';
+        res.data.forEach(c => {
+          tb.innerHTML += `<tr>
+        <td><strong>${c.phone_number}</strong></td>
+        <td>${c.lead_name || ''}</td>
+        <td>${c.total_calls || 0}</td>
+        <td>${c.booked > 0 ? '<span class="badge booked">Yes</span>' : 'No'}</td>
+        <td>${c.last_outcome || ''}</td>
+        <td>${c.last_call ? c.last_call.substring(0, 16).replace('T', ' ') : ''}</td>
+      </tr>`;
+        });
+      } catch (e) { console.error(e); }
+    }
+
+    // User List
+    async function loadUsers() {
+      try {
+        const res = await api('/api/users');
+        console.log('Users API response:', res);
+        if (!res || !res.users || res.detail) {
+          console.log('Users: No data or detail error');
+          return;
+        }
+        const tb = $('users-table').querySelector('tbody');
+        tb.innerHTML = '';
+        res.users.forEach(user => {
+          const statusClass = user.is_active ? 'booked' : 'failed';
+          const statusText = user.is_active ? 'Active' : 'Inactive';
+          tb.innerHTML += `<tr>
+        <td>${user.id}</td>
+        <td><strong>${user.username}</strong></td>
+        <td>${user.email || ''}</td>
+        <td>${user.full_name || ''}</td>
+        <td><span class="badge">${user.user_type || 'user'}</span></td>
+        <td><span class="badge ${statusClass}">${statusText}</span></td>
+        <td>
+         <button class="btn btn-small" 
+  onclick="toggleUserStatus('${user.id}', ${user.is_active ? 0 : 1})">
+  
+  <i class="fa ${user.is_active ? 'fa-user-slash' : 'fa-user-check'}"></i>
+  ${user.is_active ? 'Disable' : 'Enable'}
+</button>
+<button class="btn btn-small btn-danger" onclick="deleteUser('${user.id}')">
+  <i class="fa fa-trash"></i>
+</button>
+        </td>
+      </tr>`;
+        });
+        console.log('Users loaded:', res.users.length, 'records');
+      } catch (e) {
+        console.error('Users error:', e);
+      }
+    }
+
+    window.toggleUserStatus = async (userId, isActive) => {
+      try {
+        await apiPatch(`/api/users/${userId}/status`, { status: isActive ? 'active' : 'inactive' });
+        toast(isActive ? 'User enabled' : 'User disabled');
+        loadUsers();
+      } catch (e) {
+        toast(e.message || 'Update failed', 'error');
+      }
+    };
+
+    window.deleteUser = async (userId) => {
+      if (!confirm('Delete this user?')) return;
+      try {
+        await apiDel(`/api/users/${userId}`);
+        toast('User deleted');
+        loadUsers();
+      } catch (e) {
+        toast(e.message || 'Delete failed', 'error');
+      }
+    };
+
+    // Live Logs
+    let logInterval;
+    let logsPaused = false;
+    async function loadLogs() {
+      if (logsPaused) return;
+      try {
+        const level = $('log-level').value;
+        const url = level ? `/api/logs?limit=100&level=${level}` : '/api/logs?limit=100';
+        const res = await api(url);
+        if (!res || res.detail) return;
+        const container = $('logs-container');
+        container.innerHTML = '';
+        res.reverse().forEach(l => {
+          container.innerHTML += `<div class="log-line">
+        <span class="log-ts">[${l.timestamp.substring(11, 19)}]</span>
+        <span class="log-level-${l.level.toLowerCase()}">[${l.level.toUpperCase()}]</span>
+        <span style="color:#aaa">[${l.source}]</span>
+        <span>${l.message}</span>
+      </div>`;
+        });
+        // Auto scroll
+        container.scrollTop = container.scrollHeight;
+      } catch (e) { console.error(e); }
+    }
+
+    function toggleLogRefresh() {
+      logsPaused = !logsPaused;
+      const btn = $('log-pause-btn');
+      if (logsPaused) {
+        btn.textContent = '▶ Resume';
+        btn.classList.add('btn-danger');
+      } else {
+        btn.textContent = '⏸ Pause';
+        btn.classList.remove('btn-danger');
+        loadLogs();
+      }
+    }
+
+    // Initialization
+    let currentUser = null;
+
+    // Authentication Functions
+    function checkAuthentication() {
+      const token = localStorage.getItem('token');
+      const username = localStorage.getItem('username');
+      const userType = localStorage.getItem('user_type');
+
+      if (!token || !username) {
+        window.location.href = '/ui/login.html';
+        return false;
+      }
+
+      currentUser = {
+        token,
+        username,
+        userType
+      };
+
+      // Update UI with user info
+      document.getElementById('user-username').textContent = username;
+      document.getElementById('user-type').textContent = userType.replace('_', ' ').toUpperCase();
+
+      // Show/hide tabs based on user role
+      updateUIBasedOnRole(userType);
+
+      return true;
+    }
+
+    function updateUIBasedOnRole(userType) {
+      const settingsTab = document.getElementById('settings-tab');
+      const logsTab = document.getElementById('logs-tab');
+
+      if (userType === 'super_admin') {
+        // Super admin can see everything
+        settingsTab.style.display = 'block';
+        logsTab.style.display = 'block';
+      } else {
+        // Admin and normal users cannot see settings and logs
+        settingsTab.style.display = 'none';
+        logsTab.style.display = 'none';
+      }
+    }
+
+    function handleLogout() {
+      if (confirm('Are you sure you want to logout?')) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('username');
+        localStorage.removeItem('user_type');
+        window.location.href = '/ui/login.html';
+      }
+    }
+
+    function init() {
+      // Check authentication first
+      if (!checkAuthentication()) {
+        return;
+      }
+
+      loadStats();
+      // Set up intervals
+      setInterval(() => {
+        if ($('stats').classList.contains('active')) loadStats();
+      }, 10000);
+
+      logInterval = setInterval(() => {
+        if ($('live-logs').classList.contains('active')) loadLogs();
+      }, 3000);
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+
+</html>
